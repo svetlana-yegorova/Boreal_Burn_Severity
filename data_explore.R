@@ -19,7 +19,22 @@ reburns<-vect("./Documents/Boreal_NWT_Project_Data/NWT_reburns/NWT_reburns.shp")
 
 reburns_prj<-project(reburns, crs(bs))
 
+# which fires in the reburn shapefile burned before 1985
+reburns_df<-data.frame(reburns_prj)
 
+df_separated <- separate(reburns_df, fire_years, into = c("first_fire", "last_fire1"), sep = 4)
+
+# how many first fires burned before 1985
+df_separated<-df_separated|>
+  mutate(first_fire=as.numeric(first_fire))
+
+too_early<-df_separated|>
+  filter(first_fire<1985 & num_fires=="2")
+
+# remove polys where first fires burned before 1985
+reburns_prj<-subset(reburns_prj, !reburns_prj$fid %in% too_early$fid)
+
+#####
 rbrn_bs<-mask(bs, reburns_prj)
 
 #estimate how long it will take to extract stuff: 
@@ -33,12 +48,14 @@ print(n_valid)
 clipped_shapefile <- crop(reburns_prj, rbrn_bs)
 
 
+
+
 # Iterate extraction over each polygon
 
 results_list <- list()
 failed_polygons <- c()  # Track which polygons failed
 
-for (i in 2160:nrow(clipped_shapefile)) {
+for (i in 1:nrow(clipped_shapefile)) {
   
   cat("Processing polygon", i, "of", nrow(reburns_prj), "\n")
   
