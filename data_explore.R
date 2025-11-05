@@ -2,6 +2,7 @@
 library(terra)
 library(ggplot2)
 library(tidyr)
+library(tidyterra)
 
 # data
 bs<-rast("./Documents/Boreal_data_exploration/reburn_severity_from_Brian_dNBR/burn_severity.tif")
@@ -31,24 +32,28 @@ print(n_valid)
 # Crop the reburns shapefile to raster extent
 clipped_shapefile <- crop(reburns_prj, rbrn_bs)
 
+
 # Iterate extraction over each polygon
 
 results_list <- list()
 failed_polygons <- c()  # Track which polygons failed
 
-for (i in 1:nrow(clipped_shapefile)) {
+for (i in 2160:nrow(clipped_shapefile)) {
   
   cat("Processing polygon", i, "of", nrow(reburns_prj), "\n")
   
   
-  result <- tryCatch({
+ tryCatch({
     
     current_poly <- reburns_prj[i, ]
     
     extracted <- terra::extract(rbrn_bs, current_poly, 
-                         na.rm = TRUE,
-                        ID = TRUE,
+                        na.rm = TRUE,
+                        # ID = TRUE,
                          xy=TRUE)
+    extracted$ID<-i
+    # Store results
+    results_list[[i]] <- extracted
     
     # data.frame(
     #   polygon_id = i,
@@ -74,7 +79,7 @@ for (i in 1:nrow(clipped_shapefile)) {
 
   
   # Cleanup
-  rm(result, current_poly)
+  rm(extracted, current_poly)
   if (i %% 10 == 0) gc()
   
   # # Extract current polygon
@@ -89,9 +94,7 @@ for (i in 1:nrow(clipped_shapefile)) {
   # 
   #   {})
 
-  # Store results
-  results_list[[i]] <- extracted
-  
+
  if(i%%1000==0) saveRDS(results_list, paste0("./Documents/Boreal_Burn_Severity/outputs/", i, "_bs.RDS"))
   # write.csv(extracted, paste0("polygon_", i, "_values.csv"), row.names = FALSE)
 }
@@ -104,3 +107,5 @@ colnames(results_df)[2:5]<-c("interval", "reburn_year", "severity_1", "severity_
 
 saveRDS(results_df, "Documents/Boreal_Burn_Severity/outputs/full_bs.RDS")
 
+# save failed polygons: 
+write.csv(failed_polygons, "./Documents/Boreal_Burn_Severity/outputs/non_extracted_polys.csv")
