@@ -18,6 +18,7 @@ reburns<-vect("./Documents/Boreal_NWT_Project_Data/NWT_reburns/NWT_reburns.shp")
 
 reburns_prj<-project(reburns, crs(bs))
 
+
 rbrn_bs<-mask(bs, reburns_prj)
 
 #estimate how long it will take to extract stuff: 
@@ -44,9 +45,9 @@ for (i in 1:nrow(clipped_shapefile)) {
     
     current_poly <- reburns_prj[i, ]
     
-    extracted <- extract(rbrn_bs, current_poly, 
+    extracted <- terra::extract(rbrn_bs, current_poly, 
                          na.rm = TRUE,
-                         ID = TRUE,
+                        ID = TRUE,
                          xy=TRUE)
     
     # data.frame(
