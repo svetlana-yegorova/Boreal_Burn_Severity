@@ -8,8 +8,38 @@ library(ggstats)
 #data 
 bs_df<-readRDS("./Documents/Boreal_Burn_Severity/outputs/full_bs.RDS")
 
-# filter out the missing data (where eitehr severity 1 or severity 2 is zero)
 
+# how many polygons are missing burn severity: 
+bs_smry<-bs_df|>
+  group_by(ID)|>
+  summarize(mean_s1=mean(severity_1), mean_s2=mean(severity_2), 
+            size=n())
+
+bs_missing<-bs_smry|>
+  filter(mean_s1==0&mean_s2==0)
+
+# if we are limited to 200 ha fires, then the size/number of pixels per
+# fire should be 200ha*10,000m^2/ha*(1/(30m*30m/pixel))
+size_cutoff<-200*10000/(30*30)
+
+max(bs_missing$size)*900/10000
+
+small_f<-bs_missing|>
+  filter(size<=2223)
+# 1969 fires didn't make the size cutoff
+
+nrow(bs_missing)-nrow(small_f)
+
+missing_fires<-bs_missing|>
+  filter(size>size_cutoff)
+# 643 fires are missing
+# total hecares missing: 
+
+sum(missing_fires$size)*30*30/10000
+# almost 2 million hecatares
+
+
+# filter out the missing data (where mean severity 1 and mean severity 2 is zero)
 bs_df_clean<-bs_df|>
   filter(severity_1!=0&severity_2!=0)
 
@@ -41,7 +71,7 @@ bs_df_clean|>
                        levels=c(1, 2, 3, 4),
                        labels=c("unburned", "low", "moderate", "high") ))|>
   # slice_sample(prop=0.01) |>
-  filter(severity_1>1 & severity_2>1)|>
+  filter(severity_1>1)|>
   ggplot()+
   geom_histogram(aes(x=severity_2, fill=sev_1f), position="dodge", binwidth = 0.25)+
   scale_fill_manual(values = c(
@@ -49,8 +79,8 @@ bs_df_clean|>
     "moderate" = "lightblue",  "high" = "lightpink"))+
   scale_y_continuous(labels = scales::label_percent(scale = 1/nrow(bs_df_long)* 100)) +
   scale_x_continuous(
-    breaks = c( 2, 3, 4),
-    labels = c("low", "moderate", "high"))+
+    breaks = c(1,  2, 3, 4),
+    labels = c("unburned", "low", "moderate", "high"))+
   xlab("Severity of second fire")+
   ylab("")+
   guides(fill = guide_legend(title = "severity of \n 1st fire"))+
@@ -60,7 +90,7 @@ bs_df_clean|>
   # labs(fill="severity of \n1st fire")+
   # theme(legend.title = element_blank() )
 theme_classic()
-# ggsave("./Documents/Boreal_Burn_Severity/outputs/visuals/1_to_2nd_severity_change_overall.png", 
+# ggsave("./Documents/Boreal_Burn_Severity/outputs/visuals/1_to_2nd_severity_change_overall.png",
 #        width=7, height=4, units="in")
 
 # fires that burn at low severity at first fire are more likely to burn at low severity
@@ -151,4 +181,9 @@ bs_df_clean|>
   slice_sample(prop=0.01)|>
   ggplot()+
   geom_bar(aes(x=interval), stat="count") +
-  xlab("time since 1st fire")
+  xlab("years since 1st fire")
+
+ggsave("./Documents/Boreal_Burn_Severity/outputs/visuals/years_since_1st_fire_distribution.png",
+       width=7, height=4, units="in")
+
+
