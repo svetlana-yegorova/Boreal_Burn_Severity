@@ -18,6 +18,7 @@ bs_smry<-bs_df|>
 bs_missing<-bs_smry|>
   filter(mean_s1==0&mean_s2==0)
 
+range(bs_missing$size)
 # if we are limited to 200 ha fires, then the size/number of pixels per
 # fire should be 200ha*10,000m^2/ha*(1/(30m*30m/pixel))
 size_cutoff<-200*10000/(30*30)
@@ -26,22 +27,37 @@ max(bs_missing$size)*900/10000
 
 small_f<-bs_missing|>
   filter(size<=2223)
-# 1969 fires didn't make the size cutoff
+
+range(small_f$size)
+
+# 1211 fires didn't make the size cutoff
 
 nrow(bs_missing)-nrow(small_f)
 
 missing_fires<-bs_missing|>
   filter(size>size_cutoff)
-# 643 fires are missing
+# 91 fires are missing
 # total hecares missing: 
 
 sum(missing_fires$size)*30*30/10000
-# almost 2 million hecatares
+# 161604 hectares
 
+# what is the size distribution of non-missing fires? 
+bs_smry<-bs_smry|>
+  filter(mean_s1>0, mean_s2>0)|>
+  mutate(ha=size*900/1000)
+
+small<-bs_smry|>
+  filter(ha<200)
 
 # filter out the missing data (where mean severity 1 and mean severity 2 is zero)
 bs_df_clean<-bs_df|>
-  filter(severity_1!=0&severity_2!=0)
+  filter(!ID%in%bs_missing$ID)
+
+missing_pixels<-bs_df_clean|>
+  filter(severity_1==0&severity_2==0)
+
+nrow(missing_pixels)/nrow(bs_df_clean)
 
 bs_df_long<-pivot_longer(bs_df_clean, cols = c(severity_1, severity_2), 
                          names_to="order", values_to="severity")
@@ -55,13 +71,14 @@ bs_df_long|>
   ggplot()+
   geom_histogram(aes(severity, fill=order), position="dodge", binwidth = 0.25)+
   scale_y_continuous(labels = scales::label_percent(scale = 1/nrow(bs_df_long)* 100)) +
-  scale_x_continuous(labels = c("unburned", "low", "moderate", "high"))+
+  scale_x_continuous(breaks=c(0, 1, 2, 3, 4), 
+                     labels = c("no data", "unburned", "low", "moderate", "high"))+
   ylab("% of total")+
   # theme_classic()
   # +
   theme_update(legend.title = element_blank() )
 # # second fires tend to have slightly lower percentage/proportion 
-# of high severiy pixels
+# of high severity pixels
 ggsave("./Documents/Boreal_Burn_Severity/outputs/visuals/overall_severity1&2_severity.png", 
        width=7, height=4, units="in")
 
