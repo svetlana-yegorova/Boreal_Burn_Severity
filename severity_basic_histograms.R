@@ -18,6 +18,7 @@ bs_smry<-bs_df|>
 bs_missing<-bs_smry|>
   filter(mean_s1==0&mean_s2==0)
 
+write.csv(bs_missing, "./Documents/Boreal_Burn_Severity/outputs/zero_bs_")
 range(bs_missing$size)
 # if we are limited to 200 ha fires, then the size/number of pixels per
 # fire should be 200ha*10,000m^2/ha*(1/(30m*30m/pixel))
